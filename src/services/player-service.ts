@@ -7,6 +7,10 @@ export async function linkPlayer(guildId: string, discordUserId: string, query: 
   const identity = await wardogsProvider.resolvePlayer(query);
   if (!identity) return null;
 
+  // Validate the provider can actually read this player's stats before changing
+  // the Discord link. This prevents a failed first sync from leaving a broken link.
+  const initialStats = await wardogsProvider.getPlayerStats(identity.id);
+
   const player = await prisma.wardogsPlayer.upsert({
     where: { providerPlayerId: identity.id },
     create: { providerPlayerId: identity.id, displayName: identity.displayName },
@@ -26,7 +30,7 @@ export async function linkPlayer(guildId: string, discordUserId: string, query: 
     update: { playerId: player.id, linkedAt: new Date() }
   });
 
-  await syncPlayer(player.id, player.providerPlayerId);
+  await saveStatsSnapshot(player.id, initialStats);
   return player;
 }
 
@@ -35,9 +39,7 @@ export async function unlinkPlayer(guildId: string, discordUserId: string): Prom
   return result.count > 0;
 }
 
-export async function syncPlayer(playerDbId: bigint, providerPlayerId: string): Promise<PlayerStats> {
-  const stats = await wardogsProvider.getPlayerStats(providerPlayerId);
-
+async function saveStatsSnapshot(playerDbId: bigint, stats: PlayerStats): Promise<void> {
   await prisma.$transaction([
     prisma.wardogsPlayer.update({
       where: { id: playerDbId },
@@ -69,7 +71,11 @@ export async function syncPlayer(playerDbId: bigint, providerPlayerId: string): 
       }
     })
   ]);
+}
 
+export async function syncPlayer(playerDbId: bigint, providerPlayerId: string): Promise<PlayerStats> {
+  const stats = await wardogsProvider.getPlayerStats(providerPlayerId);
+  await saveStatsSnapshot(playerDbId, stats);
   return stats;
 }
 
