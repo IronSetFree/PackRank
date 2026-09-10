@@ -1,3 +1,4 @@
+import { createServer, type Server } from "node:http";
 import { Client, Events, GatewayIntentBits } from "discord.js";
 import { handleCommand } from "./commands/handlers.js";
 import { config } from "./config.js";
@@ -9,7 +10,51 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
 
+let discordReady = false;
+let healthServer: Server | undefined;
+
+function startHealthServer() {
+  const port = Number(process.env.PORT ?? 3000);
+
+  healthServer = createServer(async (request, response) => {
+    if (request.url === "/health") {
+      try {
+        await prisma.$queryRawUnsafe("SELECT 1");
+        const healthy = discordReady;
+        response.statusCode = healthy ? 200 : 503;
+        response.setHeader("content-type", "application/json");
+        response.end(JSON.stringify({
+          status: healthy ? "ok" : "starting",
+          discord: discordReady ? "ready" : "not_ready",
+          provider: wardogsProvider.name
+        }));
+      } catch (error) {
+        response.statusCode = 503;
+        response.setHeader("content-type", "application/json");
+        response.end(JSON.stringify({ status: "error", database: "unavailable" }));
+        console.error("Health check database error", error);
+      }
+      return;
+    }
+
+    if (request.url === "/") {
+      response.statusCode = 200;
+      response.setHeader("content-type", "text/plain; charset=utf-8");
+      response.end("PackRank is running.\n");
+      return;
+    }
+
+    response.statusCode = 404;
+    response.end("Not found\n");
+  });
+
+  healthServer.listen(port, "0.0.0.0", () => {
+    console.log(`Health server listening on port ${port}`);
+  });
+}
+
 client.once(Events.ClientReady, readyClient => {
+  discordReady = true;
   console.log(`Logged in as ${readyClient.user.tag}`);
   console.log(`WARDOGS provider: ${wardogsProvider.name}`);
 
@@ -38,7 +83,13 @@ client.on(Events.InteractionCreate, async interaction => {
 
 async function shutdown(signal: string) {
   console.log(`${signal} received; shutting down.`);
+  discordReady = false;
   client.destroy();
+
+  if (healthServer) {
+    await new Promise<void>(resolve => healthServer?.close(() => resolve()));
+  }
+
   await prisma.$disconnect();
   process.exit(0);
 }
@@ -46,4 +97,5 @@ async function shutdown(signal: string) {
 process.on("SIGINT", () => void shutdown("SIGINT"));
 process.on("SIGTERM", () => void shutdown("SIGTERM"));
 
+startHealthServer();
 await client.login(config.DISCORD_TOKEN);
