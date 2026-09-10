@@ -14,6 +14,13 @@
 - `/sync` — manually captures a fresh snapshot.
 - Automatic snapshot refresh on a configurable interval.
 - PostgreSQL + Prisma schema designed so one WARDOGS player can appear in multiple Discord guilds without duplicating their stat history.
+- Railway-ready health endpoint and production migration flow.
+
+## Railway deployment
+
+Railway is the recommended initial host for PackRank. Use the existing **`IronSetFree/PackRank` GitHub repository**; you do not need a second repo.
+
+For an unrelated existing Railway app, create a separate Railway project named **PackRank** containing the bot and its PostgreSQL service. See **[RAILWAY.md](./RAILWAY.md)** for the exact build command, pre-deploy migrations, variables, health check, and slash-command deployment steps.
 
 ## Important WARDOGS data-source note
 
