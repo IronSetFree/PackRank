@@ -11,7 +11,7 @@ export const commandDefinitions = [
   new SlashCommandBuilder()
     .setName("link")
     .setDescription("Link your Discord account to a WARDOGS player")
-    .addStringOption(o => o.setName("player").setDescription("WARDOGS player name").setRequired(true)),
+    .addStringOption(o => o.setName("player").setDescription("Player ID; SteamID64/profile URL when using Steam").setRequired(true)),
 
   new SlashCommandBuilder()
     .setName("unlink")
