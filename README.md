@@ -4,7 +4,7 @@
 
 ## What is included
 
-- `/link player:<name>` — associates a Discord member with one WARDOGS identity.
+- `/link player:<identifier>` — associates a Discord member with one WARDOGS identity. With the Steam provider, use a SteamID64, Steam profile URL, or Steam vanity name.
 - `/unlink` — removes the guild-specific link.
 - `/stats [member]` — level, cash, account worth, K/D, matches, wins, Discord rank, and global rank where available.
 - `/leaderboard metric:<...> scope:<server|global>` — community or provider-global rankings.
@@ -17,20 +17,22 @@
 
 ## Important WARDOGS data-source note
 
-At launch, there is not yet a documented, stable public WARDOGS player-stat API that this project should hard-code against. The project therefore uses a provider interface:
+At launch, there is not yet a documented BULKHEAD API for third-party player statistics or the global WARDOGS leaderboard. PackRank therefore keeps data access behind providers:
 
-- `mock` — works immediately and gives you realistic fake data for developing/testing every Discord command.
-- `http` — a clean adapter ready for an authorized official/community API once you have its contract.
+- `mock` — realistic fake data for local development.
+- `steam` — uses Valve's documented Steam Web API. It can resolve Steam identities and requests the WARDOGS Steam user-stat feed. Which WARDOGS fields are actually available depends on what BULKHEAD publishes to Steam and on the player's privacy settings.
+- `http` — a normalized adapter ready for a future authorized BULKHEAD/community API.
 
-Do **not** put reverse-engineered session tokens, Steam credentials, or private game-client endpoints directly in command handlers. Add or change only the provider implementation under `src/providers/`.
+Do **not** put reverse-engineered session tokens, Steam credentials, private game-client endpoints, or scraped third-party tracker data into command handlers. Keep all game-source logic under `src/providers/`.
 
-The public `wardogs.tools` leaderboard currently tracks linked accounts and exposes categories such as Wardog level, cash, account worth, unlocks, role levels, XP/min and $/min. It is useful evidence for what can be tracked, but its population should not be presented as every WARDOGS player unless its data source/API explicitly guarantees that.
+`wardogs.tools` publicly displays useful WARDOGS progression data, but its current Terms of Service prohibit automated scraping/crawling without prior written permission. PackRank therefore does not scrape it. If its operator grants API access later, add that API as a separate provider.
 
 ## Requirements
 
 - Node.js 24.17+
 - Docker Desktop (recommended for local PostgreSQL), or another PostgreSQL instance
 - A Discord application/bot token
+- A Steam Web API user key if you use `WARDOGS_PROVIDER=steam`
 
 The package currently targets discord.js 14.27 and Prisma 7.10. Prisma 7 uses the PostgreSQL driver adapter (`@prisma/adapter-pg`).
 
@@ -91,6 +93,35 @@ With `WARDOGS_PROVIDER=mock`, try:
 /rank metric:Wardog Level
 ```
 
+## Try the documented Steam provider
+
+Create a Steam Web API user key, then set:
+
+```env
+WARDOGS_PROVIDER=steam
+STEAM_API_KEY=your-server-side-key
+WARDOGS_STEAM_APP_ID=1867240
+```
+
+Before relying on any WARDOGS stat names, inspect what Steam currently publishes:
+
+```bash
+npm run steam:probe
+npm run steam:probe -- 7656119XXXXXXXXXX
+```
+
+The first command prints WARDOGS' published Steam stat/achievement schema. The second also prints the stats returned for one public Steam account. If the WARDOGS stat names differ from PackRank's common aliases, map them in `.env`, for example:
+
+```env
+WARDOGS_STEAM_STAT_KILLS=ExactSteamStatNameHere
+WARDOGS_STEAM_STAT_DEATHS=ExactSteamStatNameHere
+WARDOGS_STEAM_STAT_CASH=ExactSteamStatNameHere
+```
+
+With the Steam provider, `/link` accepts a 17-digit SteamID64, a `steamcommunity.com/profiles/...` URL, a `steamcommunity.com/id/...` URL, or a plain Steam vanity name.
+
+The documented Steam Web API does **not** give PackRank a general WARDOGS global player leaderboard. Server-scoped PackRank leaderboards can still rank the linked members whose stats Steam exposes. Global scope remains disabled until an authorized source exists.
+
 Have a few Discord members link any of these mock players for a richer test:
 
 ```text
@@ -128,9 +159,9 @@ SERVER CASH LEADERBOARD
 3. TacticalTim#5521     $395,291   • Global #917
 ```
 
-## Real API adapter
+## Authorized WARDOGS API adapter
 
-When you obtain an authorized API, set:
+When BULKHEAD or another authorized provider supplies a supported API, set:
 
 ```env
 WARDOGS_PROVIDER=http
