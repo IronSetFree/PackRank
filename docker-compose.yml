@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: wardogs
+      POSTGRES_PASSWORD: wardogs
+      POSTGRES_DB: wardogs
+    ports:
+      - "5432:5432"
+    volumes:
+      - wardogs_pg:/var/lib/postgresql/data
+
+volumes:
+  wardogs_pg:

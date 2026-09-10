@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model WardogsPlayer {
+  id               BigInt             @id @default(autoincrement())
+  providerPlayerId String             @unique
+  displayName      String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  links            DiscordLink[]
+  snapshots        StatSnapshot[]
+  globalRanks      GlobalRank[]
+
+  @@index([displayName])
+}
+
+model DiscordLink {
+  id            BigInt         @id @default(autoincrement())
+  guildId       String
+  discordUserId String
+  playerId      BigInt
+  linkedAt      DateTime       @default(now())
+  player        WardogsPlayer  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, discordUserId])
+  @@unique([guildId, playerId])
+  @@index([playerId])
+}
+
+model StatSnapshot {
+  id               BigInt         @id @default(autoincrement())
+  playerId         BigInt
+  season           String
+  capturedAt       DateTime       @default(now())
+
+  wardogLevel      Int?
+  totalXp          BigInt?
+  cash             BigInt?
+  accountWorth     BigInt?
+  gold             Int?
+  unlocks          Int?
+
+  kills            BigInt?
+  deaths           BigInt?
+  matches          Int?
+  wins             Int?
+
+  assaultLevel     Int?
+  medicLevel       Int?
+  reconLevel       Int?
+  supportLevel     Int?
+  driverLevel      Int?
+  pilotLevel       Int?
+
+  xpPerMinute      Float?
+  cashPerMinute    Float?
+
+  player           WardogsPlayer  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId, capturedAt(sort: Desc)])
+  @@index([season, capturedAt(sort: Desc)])
+}
+
+model GlobalRank {
+  id           BigInt         @id @default(autoincrement())
+  playerId     BigInt
+  season       String
+  metric       String
+  rank         Int
+  totalPlayers Int?
+  source       String
+  asOf         DateTime
+  player       WardogsPlayer  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, season, metric, source])
+  @@index([season, metric, rank])
+}
