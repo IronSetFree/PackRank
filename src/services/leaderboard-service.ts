@@ -2,6 +2,7 @@ import { prisma } from "../db.js";
 import type { Metric } from "../metrics.js";
 import { wardogsProvider } from "../providers/index.js";
 import { kd, winRate } from "../utils/format.js";
+import { getTrackingList } from "./tracking-list-service.js";
 
 export interface LeaderboardEntry {
   playerId: bigint | null;
@@ -94,6 +95,41 @@ export async function getServerLeaderboard(guildId: string, metric: Metric, limi
   }));
 
   return withRanks;
+}
+
+export async function getTrackingListLeaderboard(
+  guildId: string,
+  ownerDiscordUserId: string,
+  listName: string,
+  metric: Metric,
+  limit = 10
+): Promise<{ listName: string; rows: LeaderboardEntry[] } | null> {
+  const list = await getTrackingList(guildId, ownerDiscordUserId, listName);
+  if (!list) return null;
+
+  const ranked = list.members.flatMap(member => {
+    const snapshot = member.player.snapshots[0];
+    if (!snapshot) return [];
+    const value = valueForMetric(snapshot, metric);
+    if (value === null || value === undefined) return [];
+    return [{
+      playerId: member.player.id,
+      displayName: member.player.displayName,
+      value
+    }];
+  });
+
+  ranked.sort((a, b) => Number(b.value) - Number(a.value));
+  const totalPlayers = ranked.length;
+  const rows = ranked.slice(0, limit).map((row, index) => ({
+    playerId: row.playerId,
+    displayName: row.displayName,
+    value: row.value,
+    rank: index + 1,
+    totalPlayers
+  } satisfies LeaderboardEntry));
+
+  return { listName: list.name, rows };
 }
 
 export async function getGlobalLeaderboard(metric: Metric, limit = 10): Promise<LeaderboardEntry[]> {
