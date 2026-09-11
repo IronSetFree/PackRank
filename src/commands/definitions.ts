@@ -19,8 +19,9 @@ export const commandDefinitions = [
 
   new SlashCommandBuilder()
     .setName("stats")
-    .setDescription("Show a linked player's latest WARDOGS stats")
-    .addUserOption(o => o.setName("member").setDescription("Discord member; defaults to you")),
+    .setDescription("Show latest WARDOGS stats for a linked member or one of your lists")
+    .addUserOption(o => o.setName("member").setDescription("Discord member; defaults to you when no list is supplied"))
+    .addStringOption(o => o.setName("list").setDescription("Your tracking list to show").setMaxLength(32)),
 
   new SlashCommandBuilder()
     .setName("hours")
@@ -62,12 +63,14 @@ export const commandDefinitions = [
 
   new SlashCommandBuilder()
     .setName("leaderboard")
-    .setDescription("Show the Discord-server or global WARDOGS leaderboard")
+    .setDescription("Rank WARDOGS players by Discord server, tracking list, or global scope")
     .addStringOption(addMetric)
     .addStringOption(o => o.setName("scope").setDescription("Leaderboard scope").addChoices(
       { name: "Discord server", value: "server" },
+      { name: "Tracking list", value: "list" },
       { name: "Global", value: "global" }
     ).setRequired(true))
+    .addStringOption(o => o.setName("list").setDescription("Your tracking list; required when scope is Tracking list").setMaxLength(32))
     .addIntegerOption(o => o.setName("limit").setDescription("Number of players (1-25)").setMinValue(1).setMaxValue(25)),
 
   new SlashCommandBuilder()
