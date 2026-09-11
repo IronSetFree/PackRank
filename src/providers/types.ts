@@ -9,6 +9,7 @@ export interface PlayerStats {
   player: PlayerIdentity;
   capturedAt: Date;
   season: string;
+  playtimeMinutes?: number;
   wardogLevel?: number;
   totalXp?: number;
   cash?: number;
