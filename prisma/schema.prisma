@@ -20,6 +20,7 @@ model WardogsPlayer {
   links            DiscordLink[]
   snapshots        StatSnapshot[]
   globalRanks      GlobalRank[]
+  trackedBy        TrackListMember[]
 
   @@index([displayName])
 }
@@ -34,6 +35,31 @@ model DiscordLink {
 
   @@unique([guildId, discordUserId])
   @@unique([guildId, playerId])
+  @@index([playerId])
+}
+
+model TrackList {
+  id                 BigInt             @id @default(autoincrement())
+  guildId            String
+  ownerDiscordUserId String
+  name               String
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  members            TrackListMember[]
+
+  @@unique([guildId, ownerDiscordUserId, name])
+  @@index([guildId, ownerDiscordUserId])
+}
+
+model TrackListMember {
+  id       BigInt        @id @default(autoincrement())
+  listId   BigInt
+  playerId BigInt
+  addedAt  DateTime      @default(now())
+  list     TrackList     @relation(fields: [listId], references: [id], onDelete: Cascade)
+  player   WardogsPlayer @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([listId, playerId])
   @@index([playerId])
 }
 
