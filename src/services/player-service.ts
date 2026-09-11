@@ -39,7 +39,7 @@ export async function linkPlayer(guildId: string, discordUserId: string, query: 
 
   // A valid Steam identity should remain linked even when WARDOGS does not
   // publish user stats through Steam yet. Capture an initial snapshot when
-  // possible, but do not roll back the account association when stats fail.
+  // possible, including Steam playtime-only snapshots.
   try {
     const initialStats = await wardogsProvider.getPlayerStats(identity.id);
     await saveStatsSnapshot(player.id, initialStats);
@@ -66,6 +66,7 @@ async function saveStatsSnapshot(playerDbId: bigint, stats: PlayerStats): Promis
         playerId: playerDbId,
         season: stats.season || config.WARDOGS_SEASON,
         capturedAt: stats.capturedAt,
+        playtimeMinutes: stats.playtimeMinutes,
         wardogLevel: stats.wardogLevel,
         totalXp: stats.totalXp === undefined ? undefined : BigInt(stats.totalXp),
         cash: stats.cash === undefined ? undefined : BigInt(stats.cash),
