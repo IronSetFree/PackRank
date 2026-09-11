@@ -3,13 +3,20 @@ import { config } from "../config.js";
 import { wardogsProvider } from "../providers/index.js";
 import type { PlayerStats } from "../providers/types.js";
 
-export async function linkPlayer(guildId: string, discordUserId: string, query: string) {
+export interface LinkPlayerResult {
+  player: {
+    id: bigint;
+    providerPlayerId: string;
+    displayName: string;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+  statsCaptured: boolean;
+}
+
+export async function linkPlayer(guildId: string, discordUserId: string, query: string): Promise<LinkPlayerResult | null> {
   const identity = await wardogsProvider.resolvePlayer(query);
   if (!identity) return null;
-
-  // Validate the provider can actually read this player's stats before changing
-  // the Discord link. This prevents a failed first sync from leaving a broken link.
-  const initialStats = await wardogsProvider.getPlayerStats(identity.id);
 
   const player = await prisma.wardogsPlayer.upsert({
     where: { providerPlayerId: identity.id },
@@ -30,8 +37,17 @@ export async function linkPlayer(guildId: string, discordUserId: string, query: 
     update: { playerId: player.id, linkedAt: new Date() }
   });
 
-  await saveStatsSnapshot(player.id, initialStats);
-  return player;
+  // A valid Steam identity should remain linked even when WARDOGS does not
+  // publish user stats through Steam yet. Capture an initial snapshot when
+  // possible, but do not roll back the account association when stats fail.
+  try {
+    const initialStats = await wardogsProvider.getPlayerStats(identity.id);
+    await saveStatsSnapshot(player.id, initialStats);
+    return { player, statsCaptured: true };
+  } catch (error) {
+    console.warn(`Linked ${identity.id}, but initial WARDOGS stats were unavailable.`, error);
+    return { player, statsCaptured: false };
+  }
 }
 
 export async function unlinkPlayer(guildId: string, discordUserId: string): Promise<boolean> {
