@@ -2,7 +2,7 @@ import { ChatInputCommandInteraction, EmbedBuilder } from "discord.js";
 import type { Metric } from "../metrics.js";
 import { metricLabel } from "../metrics.js";
 import { wardogsProvider } from "../providers/index.js";
-import { getGlobalLeaderboard, getServerLeaderboard, getServerRank } from "../services/leaderboard-service.js";
+import { getGlobalLeaderboard, getServerLeaderboard, getServerRank, getTrackingListLeaderboard } from "../services/leaderboard-service.js";
 import { getLinkedPlayer, getPlayerProgress, linkPlayer, syncPlayer, unlinkPlayer } from "../services/player-service.js";
 import {
   addPlayerToTrackingList,
@@ -45,6 +45,45 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
 
     case "stats": {
       await interaction.deferReply();
+      const listName = interaction.options.getString("list");
+
+      if (listName) {
+        const list = await getTrackingList(guildId, interaction.user.id, listName);
+        if (!list) return interaction.editReply(`You don't have a tracking list named **${listName.toLowerCase()}**.`);
+
+        const visible = list.members.slice(0, 25);
+        const lines = visible.map(member => {
+          const snapshot = member.player.snapshots[0];
+          if (!snapshot) return `**${member.player.displayName}** — No snapshot yet`;
+
+          const parts: string[] = [];
+          if (snapshot.playtimeMinutes !== null && snapshot.playtimeMinutes !== undefined) {
+            parts.push(`⏱️ ${formatHours(snapshot.playtimeMinutes)}`);
+          }
+          if (snapshot.wardogLevel !== null && snapshot.wardogLevel !== undefined) {
+            parts.push(`Wardog ${formatNumber(snapshot.wardogLevel)}`);
+          }
+          if (snapshot.kills !== null && snapshot.kills !== undefined) {
+            parts.push(`Kills ${formatNumber(snapshot.kills)}`);
+          }
+          const kdr = kd(snapshot.kills, snapshot.deaths);
+          if (kdr !== null) parts.push(`K/D ${kdr.toFixed(2)}`);
+          if (snapshot.cash !== null && snapshot.cash !== undefined) {
+            parts.push(`Cash ${formatMoney(snapshot.cash)}`);
+          }
+
+          return `**${member.player.displayName}** — ${parts.join(" • ") || "No available stats"}`;
+        });
+        if (list.members.length > visible.length) lines.push(`_…and ${list.members.length - visible.length} more players._`);
+
+        const embed = new EmbedBuilder()
+          .setTitle(`📊 ${list.name} — latest stats`)
+          .setDescription(lines.join("\n") || "No players are being tracked in this list yet.")
+          .setFooter({ text: `${list.members.length} tracked player${list.members.length === 1 ? "" : "s"} • use /list sync to refresh` })
+          .setTimestamp();
+        return interaction.editReply({ embeds: [embed] });
+      }
+
       const user = interaction.options.getUser("member") ?? interaction.user;
       const link = await getLinkedPlayer(guildId, user.id);
       if (!link) return interaction.editReply(`${user} hasn't linked a WARDOGS account yet.`);
@@ -183,6 +222,19 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
       const metric = interaction.options.getString("metric", true) as Metric;
       const scope = interaction.options.getString("scope", true);
       const limit = interaction.options.getInteger("limit") ?? 10;
+
+      if (scope === "list") {
+        const listName = interaction.options.getString("list");
+        if (!listName) {
+          return interaction.editReply("Choose one of your tracking lists with the `list` option when using the Tracking list scope.");
+        }
+        const result = await getTrackingListLeaderboard(guildId, interaction.user.id, listName, metric, limit);
+        if (!result) return interaction.editReply(`You don't have a tracking list named **${listName.toLowerCase()}**.`);
+        return interaction.editReply({
+          embeds: [leaderboardEmbed(`📋 ${result.listName} — ${metricLabel(metric)}`, metric, result.rows)]
+        });
+      }
+
       const rows = scope === "global"
         ? await getGlobalLeaderboard(metric, limit)
         : await getServerLeaderboard(guildId, metric, limit);
