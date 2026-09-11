@@ -2,20 +2,17 @@ import { EmbedBuilder } from "discord.js";
 import type { Metric } from "../metrics.js";
 import { metricLabel } from "../metrics.js";
 import type { LeaderboardEntry } from "../services/leaderboard-service.js";
-import { formatMetric, formatMoney, formatNumber, kd, winRate } from "./format.js";
+import { formatHours, formatMetric, formatMoney, formatNumber, kd, winRate } from "./format.js";
 
 export function statsEmbed(displayName: string, snapshot: any, serverRank?: LeaderboardEntry | null, globalRank?: number | null) {
   const kdr = kd(snapshot.kills, snapshot.deaths);
   const wr = winRate(snapshot.wins, snapshot.matches);
-  const hoursPlayed = snapshot.playtimeMinutes == null
-    ? "—"
-    : `${(Number(snapshot.playtimeMinutes) / 60).toFixed(1)} h`;
 
   const embed = new EmbedBuilder()
     .setTitle(`🐕 WARDOGS — ${displayName}`)
     .setTimestamp(snapshot.capturedAt)
     .addFields(
-      { name: "Hours Played", value: hoursPlayed, inline: true },
+      { name: "Hours Played", value: formatHours(snapshot.playtimeMinutes), inline: true },
       { name: "Wardog", value: formatNumber(snapshot.wardogLevel), inline: true },
       { name: "Cash", value: formatMoney(snapshot.cash), inline: true },
       { name: "Account Worth", value: formatMoney(snapshot.accountWorth), inline: true },
