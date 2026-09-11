@@ -5,7 +5,7 @@ import { wardogsProvider } from "../providers/index.js";
 import { getGlobalLeaderboard, getServerLeaderboard, getServerRank } from "../services/leaderboard-service.js";
 import { getLinkedPlayer, getPlayerProgress, linkPlayer, syncPlayer, unlinkPlayer } from "../services/player-service.js";
 import { leaderboardEmbed, statsEmbed } from "../utils/embeds.js";
-import { formatMoney, formatNumber, kd } from "../utils/format.js";
+import { formatHours, formatMoney, formatNumber, kd } from "../utils/format.js";
 
 function requireGuild(interaction: ChatInputCommandInteraction): string {
   if (!interaction.guildId) throw new Error("This command must be used inside a Discord server.");
@@ -52,6 +52,34 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
       ]);
 
       return interaction.editReply({ embeds: [statsEmbed(link.player.displayName, snapshot, serverRank, global?.rank)] });
+    }
+
+    case "hours": {
+      await interaction.deferReply();
+      const user = interaction.options.getUser("member") ?? interaction.user;
+      const link = await getLinkedPlayer(guildId, user.id);
+      if (!link) return interaction.editReply(`${user} hasn't linked a WARDOGS account yet.`);
+
+      try {
+        const stats = await syncPlayer(link.player.id, link.player.providerPlayerId);
+        if (stats.playtimeMinutes === undefined) {
+          return interaction.editReply(
+            `Steam isn't exposing WARDOGS playtime for **${link.player.displayName}**. Their Steam Game Details may be private.`
+          );
+        }
+        return interaction.editReply(
+          `⏱️ **${link.player.displayName}** has **${formatHours(stats.playtimeMinutes)}** played in WARDOGS on Steam.`
+        );
+      } catch (error) {
+        const snapshot = link.player.snapshots[0];
+        if (snapshot?.playtimeMinutes !== null && snapshot?.playtimeMinutes !== undefined) {
+          return interaction.editReply(
+            `⏱️ **${link.player.displayName}** has **${formatHours(snapshot.playtimeMinutes)}** played in WARDOGS on Steam.\n` +
+            `_Steam couldn't refresh playtime just now, so this is the latest stored value._`
+          );
+        }
+        throw error;
+      }
     }
 
     case "leaderboard": {
