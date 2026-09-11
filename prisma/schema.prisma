@@ -43,6 +43,7 @@ model StatSnapshot {
   season           String
   capturedAt       DateTime       @default(now())
 
+  playtimeMinutes  Int?
   wardogLevel      Int?
   totalXp          BigInt?
   cash             BigInt?
