@@ -7,11 +7,15 @@ import { formatMetric, formatMoney, formatNumber, kd, winRate } from "./format.j
 export function statsEmbed(displayName: string, snapshot: any, serverRank?: LeaderboardEntry | null, globalRank?: number | null) {
   const kdr = kd(snapshot.kills, snapshot.deaths);
   const wr = winRate(snapshot.wins, snapshot.matches);
+  const hoursPlayed = snapshot.playtimeMinutes == null
+    ? "—"
+    : `${(Number(snapshot.playtimeMinutes) / 60).toFixed(1)} h`;
 
   const embed = new EmbedBuilder()
     .setTitle(`🐕 WARDOGS — ${displayName}`)
     .setTimestamp(snapshot.capturedAt)
     .addFields(
+      { name: "Hours Played", value: hoursPlayed, inline: true },
       { name: "Wardog", value: formatNumber(snapshot.wardogLevel), inline: true },
       { name: "Cash", value: formatMoney(snapshot.cash), inline: true },
       { name: "Account Worth", value: formatMoney(snapshot.accountWorth), inline: true },
