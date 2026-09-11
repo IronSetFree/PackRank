@@ -18,7 +18,7 @@
     "db:studio": "prisma studio",
     "steam:probe": "tsx src/tools/probe-steam.ts",
     "railway:build": "npm run db:generate && npm run build",
-    "railway:predeploy": "npm run db:deploy"
+    "railway:predeploy": "npm run db:deploy && npm run commands:deploy"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",
