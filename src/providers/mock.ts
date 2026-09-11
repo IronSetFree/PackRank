@@ -32,6 +32,7 @@ function makeStats(player: PlayerIdentity): PlayerStats {
     player,
     capturedAt: new Date(),
     season: "Season 01",
+    playtimeMinutes: 600 + seed * 9,
     wardogLevel: 25 + (seed % 90),
     totalXp: 50_000 + seed * 333,
     cash: 50_000 + seed * 1_250,
@@ -55,6 +56,7 @@ function makeStats(player: PlayerIdentity): PlayerStats {
 
 function metricValue(stats: PlayerStats, metric: Metric): number {
   switch (metric) {
+    case "hours": return stats.playtimeMinutes ?? 0;
     case "level": return stats.wardogLevel ?? 0;
     case "xp": return stats.totalXp ?? 0;
     case "cash": return stats.cash ?? 0;
