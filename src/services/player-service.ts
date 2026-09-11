@@ -98,7 +98,12 @@ export async function syncPlayer(playerDbId: bigint, providerPlayerId: string): 
 
 export async function syncAllLinkedPlayers(): Promise<{ synced: number; failed: number }> {
   const players = await prisma.wardogsPlayer.findMany({
-    where: { links: { some: {} } },
+    where: {
+      OR: [
+        { links: { some: {} } },
+        { trackedBy: { some: {} } }
+      ]
+    },
     select: { id: true, providerPlayerId: true }
   });
 
