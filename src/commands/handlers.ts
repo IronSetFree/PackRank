@@ -4,6 +4,15 @@ import { metricLabel } from "../metrics.js";
 import { wardogsProvider } from "../providers/index.js";
 import { getGlobalLeaderboard, getServerLeaderboard, getServerRank } from "../services/leaderboard-service.js";
 import { getLinkedPlayer, getPlayerProgress, linkPlayer, syncPlayer, unlinkPlayer } from "../services/player-service.js";
+import {
+  addPlayerToTrackingList,
+  createTrackingList,
+  deleteTrackingList,
+  getTrackingList,
+  listTrackingLists,
+  removePlayerFromTrackingList,
+  syncTrackingList
+} from "../services/tracking-list-service.js";
 import { leaderboardEmbed, statsEmbed } from "../utils/embeds.js";
 import { formatHours, formatMoney, formatNumber, kd } from "../utils/format.js";
 
@@ -80,6 +89,93 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
         }
         throw error;
       }
+    }
+
+    case "list": {
+      const subcommand = interaction.options.getSubcommand();
+      if (subcommand === "show") await interaction.deferReply();
+      else await interaction.deferReply({ ephemeral: true });
+
+      if (subcommand === "create") {
+        const name = interaction.options.getString("name", true);
+        const list = await createTrackingList(guildId, interaction.user.id, name);
+        return interaction.editReply(`Created tracking list **${list.name}**.`);
+      }
+
+      if (subcommand === "add") {
+        const name = interaction.options.getString("name", true);
+        const query = interaction.options.getString("player", true);
+        const result = await addPlayerToTrackingList(guildId, interaction.user.id, name, query);
+        if (result.alreadyTracked) {
+          return interaction.editReply(`**${result.player.displayName}** is already on **${name.toLowerCase()}**.`);
+        }
+        return interaction.editReply(
+          `Added **${result.player.displayName}** to **${name.toLowerCase()}**.${result.synced ? " Steam playtime was refreshed." : " The player is tracked, but Steam data was not available right now."}`
+        );
+      }
+
+      if (subcommand === "remove") {
+        const name = interaction.options.getString("name", true);
+        const query = interaction.options.getString("player", true);
+        const removedName = await removePlayerFromTrackingList(guildId, interaction.user.id, name, query);
+        return interaction.editReply(
+          removedName
+            ? `Removed **${removedName}** from **${name.toLowerCase()}**.`
+            : `I couldn't find **${query}** on **${name.toLowerCase()}**.`
+        );
+      }
+
+      if (subcommand === "show") {
+        const name = interaction.options.getString("name", true);
+        const list = await getTrackingList(guildId, interaction.user.id, name);
+        if (!list) return interaction.editReply(`You don't have a tracking list named **${name.toLowerCase()}**.`);
+
+        const sorted = [...list.members].sort((a, b) => {
+          const aMinutes = a.player.snapshots[0]?.playtimeMinutes ?? -1;
+          const bMinutes = b.player.snapshots[0]?.playtimeMinutes ?? -1;
+          return bMinutes - aMinutes;
+        });
+        const visible = sorted.slice(0, 25);
+        const lines = visible.map((member, index) => {
+          const minutes = member.player.snapshots[0]?.playtimeMinutes;
+          const hours = minutes === null || minutes === undefined ? "—" : formatHours(minutes);
+          return `**${index + 1}. ${member.player.displayName}** — ${hours}`;
+        });
+        if (sorted.length > visible.length) lines.push(`_…and ${sorted.length - visible.length} more players._`);
+
+        const embed = new EmbedBuilder()
+          .setTitle(`📋 ${list.name}`)
+          .setDescription(lines.join("\n") || "No players are being tracked in this list yet.")
+          .setFooter({ text: `${list.members.length} tracked player${list.members.length === 1 ? "" : "s"} • ranked by Steam hours` })
+          .setTimestamp();
+        return interaction.editReply({ embeds: [embed] });
+      }
+
+      if (subcommand === "sync") {
+        const name = interaction.options.getString("name", true);
+        const result = await syncTrackingList(guildId, interaction.user.id, name);
+        return interaction.editReply(
+          `Refreshed **${result.listName}**: **${result.synced}/${result.total}** players synced${result.failed ? `, **${result.failed}** unavailable` : ""}.`
+        );
+      }
+
+      if (subcommand === "delete") {
+        const name = interaction.options.getString("name", true);
+        const deleted = await deleteTrackingList(guildId, interaction.user.id, name);
+        return interaction.editReply(
+          deleted ? `Deleted tracking list **${name.toLowerCase()}**.` : `You don't have a tracking list named **${name.toLowerCase()}**.`
+        );
+      }
+
+      if (subcommand === "all") {
+        const lists = await listTrackingLists(guildId, interaction.user.id);
+        if (!lists.length) return interaction.editReply("You don't have any tracking lists yet. Use `/list create` to make one.");
+        return interaction.editReply(
+          lists.map(list => `**${list.name}** — ${list._count.members} player${list._count.members === 1 ? "" : "s"}`).join("\n")
+        );
+      }
+
+      return interaction.editReply("Unknown list command.");
     }
 
     case "leaderboard": {
