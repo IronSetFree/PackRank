@@ -23,6 +23,11 @@ export const commandDefinitions = [
     .addUserOption(o => o.setName("member").setDescription("Discord member; defaults to you")),
 
   new SlashCommandBuilder()
+    .setName("hours")
+    .setDescription("Show a linked player's WARDOGS hours played on Steam")
+    .addUserOption(o => o.setName("member").setDescription("Discord member; defaults to you")),
+
+  new SlashCommandBuilder()
     .setName("leaderboard")
     .setDescription("Show the Discord-server or global WARDOGS leaderboard")
     .addStringOption(addMetric)
