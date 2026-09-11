@@ -10,8 +10,14 @@ export function formatMoney(value: number | bigint | null | undefined): string {
   return `$${formatNumber(value)}`;
 }
 
+export function formatHours(minutes: number | bigint | null | undefined): string {
+  if (minutes === null || minutes === undefined) return "—";
+  return `${(Number(minutes) / 60).toFixed(1)} h`;
+}
+
 export function formatMetric(metric: Metric, value: number | bigint | null | undefined): string {
   if (value === null || value === undefined) return "—";
+  if (metric === "hours") return formatHours(value);
   if (metric === "cash" || metric === "worth" || metric === "cashmin") return formatMoney(value);
   if (metric === "kd") return Number(value).toFixed(2);
   if (metric === "winrate") return `${Number(value).toFixed(1)}%`;
