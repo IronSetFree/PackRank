@@ -1,6 +1,7 @@
 import { createServer, type Server } from "node:http";
 import { Client, Events, GatewayIntentBits } from "discord.js";
 import { handleCommand } from "./commands/handlers.js";
+import { registerCommands } from "./commands/register.js";
 import { config } from "./config.js";
 import { prisma } from "./db.js";
 import { wardogsProvider } from "./providers/index.js";
@@ -53,10 +54,17 @@ function startHealthServer() {
   });
 }
 
-client.once(Events.ClientReady, readyClient => {
+client.once(Events.ClientReady, async readyClient => {
   discordReady = true;
   console.log(`Logged in as ${readyClient.user.tag}`);
   console.log(`WARDOGS provider: ${wardogsProvider.name}`);
+
+  try {
+    await registerCommands();
+    console.log("Discord slash commands are registered.");
+  } catch (error) {
+    console.error("Failed to register Discord slash commands", error);
+  }
 
   const intervalMs = config.SYNC_INTERVAL_MINUTES * 60_000;
   setInterval(async () => {
