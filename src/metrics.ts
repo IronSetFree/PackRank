@@ -1,4 +1,5 @@
 export const metricChoices = [
+  ["Hours Played", "hours"],
   ["Wardog Level", "level"],
   ["XP", "xp"],
   ["Cash", "cash"],
