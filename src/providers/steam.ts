@@ -49,6 +49,18 @@ interface SteamUserStatsResponse {
   };
 }
 
+interface SteamOwnedGame {
+  appid: number;
+  playtime_forever?: number;
+}
+
+interface SteamOwnedGamesResponse {
+  response?: {
+    game_count?: number;
+    games?: SteamOwnedGame[];
+  };
+}
+
 function normalizeStatName(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
@@ -123,6 +135,25 @@ export class SteamWardogsProvider implements WardogsProvider {
     return data.response?.players?.[0] ?? null;
   }
 
+  private async getPlaytimeMinutes(steamId: string): Promise<number | undefined> {
+    try {
+      const data = await this.request<SteamOwnedGamesResponse>(
+        "/IPlayerService/GetOwnedGames/v1/",
+        {
+          steamid: steamId,
+          include_appinfo: 0,
+          include_played_free_games: 1,
+          "appids_filter[0]": this.appId
+        }
+      );
+      const game = data.response?.games?.find(entry => entry.appid === this.appId);
+      return typeof game?.playtime_forever === "number" ? game.playtime_forever : undefined;
+    } catch (error) {
+      console.warn(`Steam playtime unavailable for ${steamId}.`, error);
+      return undefined;
+    }
+  }
+
   private getStat(stats: SteamUserStat[], override: string | undefined, aliases: string[]): number | undefined {
     const byNormalizedName = new Map(stats.map(stat => [normalizeStatName(stat.name), stat.value]));
 
@@ -150,25 +181,27 @@ export class SteamWardogsProvider implements WardogsProvider {
   }
 
   async getPlayerStats(playerId: string): Promise<PlayerStats> {
-    const [summary, response] = await Promise.all([
+    const [summary, playtimeMinutes] = await Promise.all([
       this.getPlayerSummary(playerId),
-      this.request<SteamUserStatsResponse>("/ISteamUserStats/GetUserStatsForGame/v2/", {
-        steamid: playerId,
-        appid: this.appId
-      })
+      this.getPlaytimeMinutes(playerId)
     ]);
 
     if (!summary) throw new Error(`Steam user ${playerId} could not be resolved.`);
 
-    const stats = response.playerstats?.stats ?? [];
-    if (stats.length === 0) {
-      throw new Error(
-        "Steam returned no published WARDOGS user stats. The player's Game Details may be private, " +
-        "or WARDOGS may not publish progression/combat stats through Steam yet."
-      );
+    let stats: SteamUserStat[] = [];
+    try {
+      const response = await this.request<SteamUserStatsResponse>("/ISteamUserStats/GetUserStatsForGame/v2/", {
+        steamid: playerId,
+        appid: this.appId
+      });
+      stats = response.playerstats?.stats ?? [];
+    } catch (error) {
+      // WARDOGS may not expose user stats through Steam even when Steam playtime is available.
+      console.warn(`Published WARDOGS Steam stats unavailable for ${playerId}.`, error);
     }
 
     const mapped: Omit<PlayerStats, "player" | "capturedAt" | "season"> = {
+      playtimeMinutes,
       wardogLevel: this.getStat(stats, this.statNames.wardogLevel, ["wardog_level", "wardoglevel", "player_level"]),
       totalXp: this.getStat(stats, this.statNames.totalXp, ["total_xp", "wardog_xp", "wardogxp", "player_xp"]),
       cash: this.getStat(stats, this.statNames.cash, ["cash", "player_cash", "balance"]),
@@ -190,6 +223,12 @@ export class SteamWardogsProvider implements WardogsProvider {
     };
 
     if (!Object.values(mapped).some(value => value !== undefined)) {
+      if (stats.length === 0) {
+        throw new Error(
+          "Steam returned no WARDOGS playtime or published user stats. The player's Game Details may be private, " +
+          "or WARDOGS may not publish progression/combat stats through Steam yet."
+        );
+      }
       throw new Error(
         `Steam returned ${stats.length} WARDOGS stats, but none match PackRank's configured mappings. ` +
         "Run `npm run steam:probe -- <SteamID64>` and set the WARDOGS_STEAM_STAT_* names in .env."
