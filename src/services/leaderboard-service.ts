@@ -17,6 +17,7 @@ export interface LeaderboardEntry {
 
 function valueForMetric(snapshot: any, metric: Metric): number | bigint | null {
   switch (metric) {
+    case "hours": return snapshot.playtimeMinutes;
     case "level": return snapshot.wardogLevel;
     case "xp": return snapshot.totalXp;
     case "cash": return snapshot.cash;
