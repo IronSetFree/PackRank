@@ -28,6 +28,39 @@ export const commandDefinitions = [
     .addUserOption(o => o.setName("member").setDescription("Discord member; defaults to you")),
 
   new SlashCommandBuilder()
+    .setName("list")
+    .setDescription("Create and manage named WARDOGS player tracking lists")
+    .addSubcommand(s => s
+      .setName("create")
+      .setDescription("Create a tracking list")
+      .addStringOption(o => o.setName("name").setDescription("List name").setRequired(true).setMaxLength(32)))
+    .addSubcommand(s => s
+      .setName("add")
+      .setDescription("Add a Steam player to a tracking list")
+      .addStringOption(o => o.setName("name").setDescription("List name").setRequired(true).setMaxLength(32))
+      .addStringOption(o => o.setName("player").setDescription("SteamID64, Steam profile URL, or vanity name").setRequired(true)))
+    .addSubcommand(s => s
+      .setName("remove")
+      .setDescription("Remove a player from a tracking list")
+      .addStringOption(o => o.setName("name").setDescription("List name").setRequired(true).setMaxLength(32))
+      .addStringOption(o => o.setName("player").setDescription("SteamID64, Steam profile URL, or exact tracked name").setRequired(true)))
+    .addSubcommand(s => s
+      .setName("show")
+      .setDescription("Show the players in one tracking list")
+      .addStringOption(o => o.setName("name").setDescription("List name").setRequired(true).setMaxLength(32)))
+    .addSubcommand(s => s
+      .setName("sync")
+      .setDescription("Refresh every player in one tracking list")
+      .addStringOption(o => o.setName("name").setDescription("List name").setRequired(true).setMaxLength(32)))
+    .addSubcommand(s => s
+      .setName("delete")
+      .setDescription("Delete one of your tracking lists")
+      .addStringOption(o => o.setName("name").setDescription("List name").setRequired(true).setMaxLength(32)))
+    .addSubcommand(s => s
+      .setName("all")
+      .setDescription("Show all of your tracking lists")),
+
+  new SlashCommandBuilder()
     .setName("leaderboard")
     .setDescription("Show the Discord-server or global WARDOGS leaderboard")
     .addStringOption(addMetric)
