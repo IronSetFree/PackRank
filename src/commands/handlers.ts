@@ -19,9 +19,14 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
     case "link": {
       await interaction.deferReply({ ephemeral: true });
       const query = interaction.options.getString("player", true);
-      const player = await linkPlayer(guildId, interaction.user.id, query);
-      if (!player) return interaction.editReply(`I couldn't find a WARDOGS player matching **${query}**.`);
-      return interaction.editReply(`Linked you to **${player.displayName}** and captured the first stats snapshot.`);
+      const result = await linkPlayer(guildId, interaction.user.id, query);
+      if (!result) return interaction.editReply(`I couldn't find a WARDOGS player matching **${query}**.`);
+      if (result.statsCaptured) {
+        return interaction.editReply(`Linked you to **${result.player.displayName}** and captured the first stats snapshot.`);
+      }
+      return interaction.editReply(
+        `Linked you to **${result.player.displayName}**. WARDOGS stats are not currently available through Steam, so no stats snapshot was captured yet.`
+      );
     }
 
     case "unlink": {
@@ -33,8 +38,13 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
       await interaction.deferReply();
       const user = interaction.options.getUser("member") ?? interaction.user;
       const link = await getLinkedPlayer(guildId, user.id);
-      const snapshot = link?.player.snapshots[0];
-      if (!link || !snapshot) return interaction.editReply(`${user} hasn't linked a WARDOGS account yet.`);
+      if (!link) return interaction.editReply(`${user} hasn't linked a WARDOGS account yet.`);
+      const snapshot = link.player.snapshots[0];
+      if (!snapshot) {
+        return interaction.editReply(
+          `**${link.player.displayName}** is linked, but WARDOGS stats are not currently available through Steam.`
+        );
+      }
 
       const [serverRank, global] = await Promise.all([
         getServerRank(guildId, user.id, "level"),
@@ -88,10 +98,12 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
         getLinkedPlayer(guildId, interaction.user.id),
         getLinkedPlayer(guildId, other.id)
       ]);
-      const sa = a?.player.snapshots[0];
-      const sb = b?.player.snapshots[0];
-      if (!a || !sa) return interaction.editReply("Link your account first with `/link`. ");
-      if (!b || !sb) return interaction.editReply(`${other} hasn't linked a WARDOGS account yet.`);
+      if (!a) return interaction.editReply("Link your account first with `/link`.");
+      if (!b) return interaction.editReply(`${other} hasn't linked a WARDOGS account yet.`);
+      const sa = a.player.snapshots[0];
+      const sb = b.player.snapshots[0];
+      if (!sa) return interaction.editReply(`**${a.player.displayName}** is linked, but WARDOGS stats are not currently available through Steam.`);
+      if (!sb) return interaction.editReply(`**${b.player.displayName}** is linked, but WARDOGS stats are not currently available through Steam.`);
 
       const embed = new EmbedBuilder()
         .setTitle(`⚔️ ${a.player.displayName} vs ${b.player.displayName}`)
