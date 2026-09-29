@@ -1,10 +1,15 @@
 import { config } from "../config.js";
 import { HttpWardogsProvider } from "./http.js";
 import { MockWardogsProvider } from "./mock.js";
-import { SteamWardogsProvider } from "./steam.js";\nimport { WardogsTrackerProvider } from "./wardogs-tracker.js";
+import { SteamWardogsProvider } from "./steam.js";
+import { WardogsTrackerProvider } from "./wardogs-tracker.js";
 import type { WardogsProvider } from "./types.js";
 
-export function createProvider(): WardogsProvider {\n  if (config.WARDOGS_PROVIDER === "wardogs-tracker") {\n    return new WardogsTrackerProvider(config.WARDOGS_TRACKER_API_BASE_URL);\n  }\n
+export function createProvider(): WardogsProvider {
+  if (config.WARDOGS_PROVIDER === "wardogs-tracker") {
+    return new WardogsTrackerProvider(config.WARDOGS_TRACKER_API_BASE_URL);
+  }
+
   if (config.WARDOGS_PROVIDER === "steam") {
     if (!config.STEAM_API_KEY) {
       throw new Error("STEAM_API_KEY is required when WARDOGS_PROVIDER=steam");
