@@ -11,7 +11,7 @@ export const commandDefinitions = [
   new SlashCommandBuilder()
     .setName("link")
     .setDescription("Link your Discord account to a WARDOGS player")
-    .addStringOption(o => o.setName("player").setDescription("Player ID; SteamID64/profile URL when using Steam").setRequired(true)),
+    .addStringOption(o => o.setName("player").setDescription("SteamID64 or Steam profile URL").setRequired(true)),
 
   new SlashCommandBuilder()
     .setName("unlink")
@@ -37,7 +37,7 @@ export const commandDefinitions = [
       .addStringOption(o => o.setName("name").setDescription("List name").setRequired(true).setMaxLength(32)))
     .addSubcommand(s => s
       .setName("add")
-      .setDescription("Add a Steam player to a tracking list")
+      .setDescription("Add a WARDOGS player to a tracking list")
       .addStringOption(o => o.setName("name").setDescription("List name").setRequired(true).setMaxLength(32))
       .addStringOption(o => o.setName("player").setDescription("SteamID64, Steam profile URL, or vanity name").setRequired(true)))
     .addSubcommand(s => s
