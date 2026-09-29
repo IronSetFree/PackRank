@@ -37,6 +37,7 @@ export function statsEmbed(displayName: string, snapshot: any, serverRank?: Lead
     embed.addFields({ name: "Global Rank", value: `#${globalRank}`, inline: true });
   }
 
+  if (source) embed.setFooter({ text: `Data: ${source}` });
   return embed;
 }
 
