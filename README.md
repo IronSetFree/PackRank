@@ -24,11 +24,12 @@ For an unrelated existing Railway app, create a separate Railway project named *
 
 ## Important WARDOGS data-source note
 
-At launch, there is not yet a documented BULKHEAD API for third-party player statistics or the global WARDOGS leaderboard. PackRank therefore keeps data access behind providers:
+There is still no documented official BULKHEAD player-stats API, but WARDOGS Tracker now publishes a documented, read-only community API for opted-in/synced players. PackRank keeps data access behind providers:
 
 - `mock` — realistic fake data for local development.
 - `steam` — uses Valve's documented Steam Web API. It can resolve Steam identities and requests the WARDOGS Steam user-stat feed. Which WARDOGS fields are actually available depends on what BULKHEAD publishes to Steam and on the player's privacy settings.
-- `http` — a normalized adapter ready for a future authorized BULKHEAD/community API.
+- `wardogs-tracker` — uses the documented WARDOGS Tracker API. No API key is required. It provides Wardog level, career XP, cash/gold (subject to player privacy), unlocks, role levels, and supported global leaderboards for players who have signed in and synced there.
+- `http` — a normalized adapter ready for another authorized BULKHEAD/community API.
 
 Do **not** put reverse-engineered session tokens, Steam credentials, private game-client endpoints, or scraped third-party tracker data into command handlers. Keep all game-source logic under `src/providers/`.
 
@@ -100,6 +101,19 @@ With `WARDOGS_PROVIDER=mock`, try:
 /rank metric:Wardog Level
 ```
 
+## Recommended: WARDOGS Tracker provider
+
+Set:
+
+```env
+WARDOGS_PROVIDER=wardogs-tracker
+WARDOGS_TRACKER_API_BASE_URL=https://wardogstracker.gg/api/v1/
+```
+
+No API key is required. Players must first sign in at WARDOGS Tracker and sync their WARDOGS profile. PackRank accepts a SteamID64 or a `steamcommunity.com/profiles/<SteamID64>` URL when this provider is active. Unknown/private profiles and profiles that have not synced progression data will not produce a snapshot.
+
+The API is read-only, currently rate-limited to 120 requests/minute/IP, and its responses are cached upstream for about 60 seconds. PackRank adds its own 60-second in-memory cache and credits WARDOGS Tracker in stat/global-leaderboard output. Supported provider-global sorts are Wardog level, XP, cash, gold, and unlocks. Other PackRank metrics remain available for server/list rankings when the underlying snapshots contain them.
+
 ## Try the documented Steam provider
 
 Create a Steam Web API user key, then set:
@@ -127,7 +141,7 @@ WARDOGS_STEAM_STAT_CASH=ExactSteamStatNameHere
 
 With the Steam provider, `/link` accepts a 17-digit SteamID64, a `steamcommunity.com/profiles/...` URL, a `steamcommunity.com/id/...` URL, or a plain Steam vanity name.
 
-The documented Steam Web API does **not** give PackRank a general WARDOGS global player leaderboard. Server-scoped PackRank leaderboards can still rank the linked members whose stats Steam exposes. Global scope remains disabled until an authorized source exists.
+The documented Steam Web API does **not** give PackRank a general WARDOGS global player leaderboard. Server-scoped PackRank leaderboards can still rank the linked members whose stats Steam exposes. Use the `wardogs-tracker` provider for its documented supported global progression leaderboards.
 
 Have a few Discord members link any of these mock players for a richer test:
 
