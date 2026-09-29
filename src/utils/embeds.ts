@@ -4,7 +4,7 @@ import { metricLabel } from "../metrics.js";
 import type { LeaderboardEntry } from "../services/leaderboard-service.js";
 import { formatHours, formatMetric, formatMoney, formatNumber, kd, winRate } from "./format.js";
 
-export function statsEmbed(displayName: string, snapshot: any, serverRank?: LeaderboardEntry | null, globalRank?: number | null) {
+export function statsEmbed(displayName: string, snapshot: any, serverRank?: LeaderboardEntry | null, globalRank?: number | null, source?: string) {
   const kdr = kd(snapshot.kills, snapshot.deaths);
   const wr = winRate(snapshot.wins, snapshot.matches);
 
@@ -49,6 +49,6 @@ export function leaderboardEmbed(title: string, metric: Metric, rows: Leaderboar
   return new EmbedBuilder()
     .setTitle(title)
     .setDescription(lines.join("\n") || "No ranked players yet.")
-    .setFooter({ text: `${metricLabel(metric)} • ${rows.length ? `${rows[0]?.totalPlayers ?? rows.length} ranked` : "no data"}` })
+    .setFooter({ text: `${metricLabel(metric)} • ${rows.length ? `${rows[0]?.totalPlayers ?? rows.length} ranked` : "no data"}${rows[0]?.source ? ` • Data: ${rows[0].source}` : ""}` })
     .setTimestamp();
 }
