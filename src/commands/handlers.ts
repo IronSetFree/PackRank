@@ -99,7 +99,7 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
         wardogsProvider.getGlobalRank?.(link.player.providerPlayerId, "level").catch(() => null)
       ]);
 
-      return interaction.editReply({ embeds: [statsEmbed(link.player.displayName, snapshot, serverRank, global?.rank)] });
+      return interaction.editReply({ embeds: [statsEmbed(link.player.displayName, snapshot, serverRank, global?.rank, wardogsProvider.name === "wardogs-tracker" ? "WARDOGS Tracker — wardogstracker.gg" : undefined)] });
     }
 
     case "hours": {
