@@ -1,7 +1,7 @@
 import { prisma } from "../db.js";
 import { config } from "../config.js";
 import { wardogsProvider } from "../providers/index.js";
-import type { PlayerStats } from "../providers/types.js";
+import type { PlayerStats } from "../providers/types.js";\nimport { WardogsNowClient } from "../providers/wardogs-now.js";\n\nconst wardogsNow = config.WARDOGS_NOW_SERVER_ID\n  ? new WardogsNowClient(config.WARDOGS_NOW_SERVER_ID, config.WARDOGS_NOW_API_BASE_URL)\n  : null;
 
 export interface LinkPlayerResult {
   player: {
