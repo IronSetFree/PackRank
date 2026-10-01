@@ -1,7 +1,12 @@
 import { prisma } from "../db.js";
 import { config } from "../config.js";
 import { wardogsProvider } from "../providers/index.js";
-import type { PlayerStats } from "../providers/types.js";\nimport { WardogsNowClient } from "../providers/wardogs-now.js";\n\nconst wardogsNow = config.WARDOGS_NOW_SERVER_ID\n  ? new WardogsNowClient(config.WARDOGS_NOW_SERVER_ID, config.WARDOGS_NOW_API_BASE_URL)\n  : null;
+import type { PlayerStats } from "../providers/types.js";
+import { WardogsNowClient } from "../providers/wardogs-now.js";
+
+const wardogsNow = config.WARDOGS_NOW_SERVER_ID
+  ? new WardogsNowClient(config.WARDOGS_NOW_SERVER_ID, config.WARDOGS_NOW_API_BASE_URL)
+  : null;
 
 export interface LinkPlayerResult {
   player: {
@@ -41,8 +46,7 @@ export async function linkPlayer(guildId: string, discordUserId: string, query: 
   // publish user stats through Steam yet. Capture an initial snapshot when
   // possible, including Steam playtime-only snapshots.
   try {
-    const initialStats = await wardogsProvider.getPlayerStats(identity.id);
-    await saveStatsSnapshot(player.id, initialStats);
+    await syncPlayer(player.id, identity.id);
     return { player, statsCaptured: true };
   } catch (error) {
     console.warn(`Linked ${identity.id}, but initial WARDOGS stats were unavailable.`, error);
@@ -92,6 +96,22 @@ async function saveStatsSnapshot(playerDbId: bigint, stats: PlayerStats): Promis
 
 export async function syncPlayer(playerDbId: bigint, providerPlayerId: string): Promise<PlayerStats> {
   const stats = await wardogsProvider.getPlayerStats(providerPlayerId);
+
+  if (wardogsNow) {
+    try {
+      const combat = await wardogsNow.getPlayerCombatStats(providerPlayerId);
+      if (combat) {
+        stats.kills = combat.kills ?? stats.kills;
+        stats.deaths = combat.deaths ?? stats.deaths;
+        stats.matches = combat.matches ?? stats.matches;
+        stats.wins = combat.wins ?? stats.wins;
+        stats.playtimeMinutes = combat.playtimeMinutes ?? stats.playtimeMinutes;
+      }
+    } catch (error) {
+      console.warn(`WARDOGS NOW combat enrichment failed for ${providerPlayerId}.`, error);
+    }
+  }
+
   await saveStatsSnapshot(playerDbId, stats);
   return stats;
 }
