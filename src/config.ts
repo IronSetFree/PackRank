@@ -11,7 +11,7 @@ const schema = z.object({
   WARDOGS_PROVIDER: z.enum(["mock", "steam", "http", "wardogs-tracker"]).default("mock"),
   WARDOGS_API_BASE_URL: z.string().url().optional().or(z.literal("")).transform(v => v || undefined),
   WARDOGS_API_TOKEN: optionalString,
-  WARDOGS_TRACKER_API_BASE_URL: z.string().url().default("https://wardogstracker.gg/api/v1/"),
+  WARDOGS_TRACKER_API_BASE_URL: z.string().url().default("https://wardogstracker.gg/api/v1/"),\n  WARDOGS_NOW_API_BASE_URL: z.string().url().default("https://wardogsnow.com/api/public/v1/"),\n  WARDOGS_NOW_SERVER_ID: z.coerce.number().int().positive().optional(),
   STEAM_API_KEY: optionalString,
   WARDOGS_STEAM_APP_ID: z.coerce.number().int().positive().default(1867240),
   WARDOGS_STEAM_STAT_LEVEL: optionalString,
