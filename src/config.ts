@@ -13,7 +13,7 @@ const schema = z.object({
   WARDOGS_API_TOKEN: optionalString,
   WARDOGS_TRACKER_API_BASE_URL: z.string().url().default("https://wardogstracker.gg/api/v1/"),
   WARDOGS_NOW_API_BASE_URL: z.string().url().default("https://wardogsnow.com/api/public/v1/"),
-  WARDOGS_NOW_SERVER_ID: z.coerce.number().int().positive().optional(),
+  WARDOGS_NOW_SERVER_ID: z.union([z.coerce.number().int().positive(), z.literal("").transform(() => undefined)]).optional(),
   STEAM_API_KEY: optionalString,
   WARDOGS_STEAM_APP_ID: z.coerce.number().int().positive().default(1867240),
   WARDOGS_STEAM_STAT_LEVEL: optionalString,
