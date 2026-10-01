@@ -28,7 +28,7 @@ There is still no documented official BULKHEAD player-stats API, but WARDOGS Tra
 
 - `mock` — realistic fake data for local development.
 - `steam` — uses Valve's documented Steam Web API. It can resolve Steam identities and requests the WARDOGS Steam user-stat feed. Which WARDOGS fields are actually available depends on what BULKHEAD publishes to Steam and on the player's privacy settings.
-- `wardogs-tracker` — uses the documented WARDOGS Tracker API. No API key is required. It provides Wardog level, career XP, cash/gold (subject to player privacy), unlocks, role levels, and supported global leaderboards for players who have signed in and synced there.
+- `wardogs-tracker` — uses the documented WARDOGS Tracker API. No API key is required. It provides Wardog level, career XP, cash/gold (subject to player privacy), unlocks, role levels, and supported global leaderboards for players who have signed in and synced there.\n- WARDOGS NOW enrichment — optional, server-scoped combat totals from a community server whose owner enabled player-stat tracking and Public API. It can add kills, deaths, matches, wins, and server-observed playtime to snapshots.
 - `http` — a normalized adapter ready for another authorized BULKHEAD/community API.
 
 Do **not** put reverse-engineered session tokens, Steam credentials, private game-client endpoints, or scraped third-party tracker data into command handlers. Keep all game-source logic under `src/providers/`.
