@@ -51,7 +51,7 @@ export async function addPlayerToTrackingList(
   if (!list) throw new Error(`You don't have a tracking list named **${normalizeListName(listName)}**.`);
 
   const identity = await wardogsProvider.resolvePlayer(query);
-  if (!identity) throw new Error(`I couldn't resolve **${query}** to a Steam player.`);
+  if (!identity) throw new Error(`I couldn't resolve **${query}** to a WARDOGS player.`);
 
   const player = await prisma.wardogsPlayer.upsert({
     where: { providerPlayerId: identity.id },

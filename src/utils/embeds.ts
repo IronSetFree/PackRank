@@ -4,7 +4,7 @@ import { metricLabel } from "../metrics.js";
 import type { LeaderboardEntry } from "../services/leaderboard-service.js";
 import { formatHours, formatMetric, formatMoney, formatNumber, kd, winRate } from "./format.js";
 
-export function statsEmbed(displayName: string, snapshot: any, serverRank?: LeaderboardEntry | null, globalRank?: number | null) {
+export function statsEmbed(displayName: string, snapshot: any, serverRank?: LeaderboardEntry | null, globalRank?: number | null, source?: string) {
   const kdr = kd(snapshot.kills, snapshot.deaths);
   const wr = winRate(snapshot.wins, snapshot.matches);
 
@@ -14,14 +14,20 @@ export function statsEmbed(displayName: string, snapshot: any, serverRank?: Lead
     .addFields(
       { name: "Hours Played", value: formatHours(snapshot.playtimeMinutes), inline: true },
       { name: "Wardog", value: formatNumber(snapshot.wardogLevel), inline: true },
+      { name: "Career XP", value: formatNumber(snapshot.totalXp), inline: true },
       { name: "Cash", value: formatMoney(snapshot.cash), inline: true },
+      { name: "Gold", value: formatNumber(snapshot.gold), inline: true },
+      { name: "Unlocks", value: formatNumber(snapshot.unlocks), inline: true },
       { name: "Account Worth", value: formatMoney(snapshot.accountWorth), inline: true },
       { name: "Kills", value: formatNumber(snapshot.kills), inline: true },
       { name: "Deaths", value: formatNumber(snapshot.deaths), inline: true },
       { name: "K/D", value: kdr === null ? "—" : kdr.toFixed(2), inline: true },
       { name: "Matches", value: formatNumber(snapshot.matches), inline: true },
       { name: "Wins", value: formatNumber(snapshot.wins), inline: true },
-      { name: "Win Rate", value: wr === null ? "—" : `${wr.toFixed(1)}%`, inline: true }
+      { name: "Win Rate", value: wr === null ? "—" : `${wr.toFixed(1)}%`, inline: true },
+      { name: "Assault / Medic", value: `${formatNumber(snapshot.assaultLevel)} / ${formatNumber(snapshot.medicLevel)}`, inline: true },
+      { name: "Recon / Support", value: `${formatNumber(snapshot.reconLevel)} / ${formatNumber(snapshot.supportLevel)}`, inline: true },
+      { name: "Driver / Pilot", value: `${formatNumber(snapshot.driverLevel)} / ${formatNumber(snapshot.pilotLevel)}`, inline: true }
     );
 
   if (serverRank) {
@@ -31,6 +37,7 @@ export function statsEmbed(displayName: string, snapshot: any, serverRank?: Lead
     embed.addFields({ name: "Global Rank", value: `#${globalRank}`, inline: true });
   }
 
+  if (source) embed.setFooter({ text: `Data: ${source}` });
   return embed;
 }
 
@@ -43,6 +50,6 @@ export function leaderboardEmbed(title: string, metric: Metric, rows: Leaderboar
   return new EmbedBuilder()
     .setTitle(title)
     .setDescription(lines.join("\n") || "No ranked players yet.")
-    .setFooter({ text: `${metricLabel(metric)} • ${rows.length ? `${rows[0]?.totalPlayers ?? rows.length} ranked` : "no data"}` })
+    .setFooter({ text: `${metricLabel(metric)} • ${rows.length ? `${rows[0]?.totalPlayers ?? rows.length} ranked` : "no data"}${rows[0]?.source ? ` • Data: ${rows[0].source}` : ""}` })
     .setTimestamp();
 }

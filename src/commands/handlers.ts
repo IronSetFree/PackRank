@@ -34,7 +34,7 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
         return interaction.editReply(`Linked you to **${result.player.displayName}** and captured the first stats snapshot.`);
       }
       return interaction.editReply(
-        `Linked you to **${result.player.displayName}**. WARDOGS stats are not currently available through Steam, so no stats snapshot was captured yet.`
+        `Linked you to **${result.player.displayName}**. No progression snapshot was captured. If you're using WARDOGS Tracker, sign in there and sync your profile first.`
       );
     }
 
@@ -90,7 +90,7 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
       const snapshot = link.player.snapshots[0];
       if (!snapshot) {
         return interaction.editReply(
-          `**${link.player.displayName}** is linked, but WARDOGS stats are not currently available through Steam.`
+          `**${link.player.displayName}** is linked, but no progression snapshot is available yet.`
         );
       }
 
@@ -99,7 +99,7 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
         wardogsProvider.getGlobalRank?.(link.player.providerPlayerId, "level").catch(() => null)
       ]);
 
-      return interaction.editReply({ embeds: [statsEmbed(link.player.displayName, snapshot, serverRank, global?.rank)] });
+      return interaction.editReply({ embeds: [statsEmbed(link.player.displayName, snapshot, serverRank, global?.rank, wardogsProvider.name === "wardogs-tracker" ? "WARDOGS Tracker — wardogstracker.gg" : undefined)] });
     }
 
     case "hours": {
@@ -149,7 +149,7 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
           return interaction.editReply(`**${result.player.displayName}** is already on **${name.toLowerCase()}**.`);
         }
         return interaction.editReply(
-          `Added **${result.player.displayName}** to **${name.toLowerCase()}**.${result.synced ? " Steam playtime was refreshed." : " The player is tracked, but Steam data was not available right now."}`
+          `Added **${result.player.displayName}** to **${name.toLowerCase()}**.${result.synced ? " Progression stats were refreshed." : " The player is tracked, but progression data was not available right now."}`
         );
       }
 
@@ -278,7 +278,7 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
       if (!b) return interaction.editReply(`${other} hasn't linked a WARDOGS account yet.`);
       const sa = a.player.snapshots[0];
       const sb = b.player.snapshots[0];
-      if (!sa) return interaction.editReply(`**${a.player.displayName}** is linked, but WARDOGS stats are not currently available through Steam.`);
+      if (!sa) return interaction.editReply(`**${a.player.displayName}** is linked, but no progression snapshot is available yet.`);
       if (!sb) return interaction.editReply(`**${b.player.displayName}** is linked, but WARDOGS stats are not currently available through Steam.`);
 
       const embed = new EmbedBuilder()
